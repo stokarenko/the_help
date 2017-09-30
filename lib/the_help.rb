@@ -1,4 +1,4 @@
-require "the_help/version"
+require 'the_help/version'
 
 module TheHelp
   # Your code goes here...
