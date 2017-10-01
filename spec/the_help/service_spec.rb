@@ -132,5 +132,37 @@ RSpec.describe TheHelp::Service do
         end
       end
     end
+
+    context 'when an input is defined with no default value' do
+      let(:subclass) {
+        Class.new(described_class) do
+          input :foo
+
+          authorization_policy { TheHelp::Service::ALLOW }
+
+          main do
+            foo.some_message
+          end
+        end
+      }
+
+      let(:collaborator) {
+        double('collaborator input', some_message: nil)
+      }
+
+      before(:each) do
+        service_args[:foo] = collaborator
+      end
+
+      it 'requires the input to be specified at initialization' do
+        expect { subclass.new(context: authorization_context) }
+          .to raise_error(ArgumentError, /Missing required .*foo/)
+      end
+
+      it 'makes the input value available to the instance' do
+        subject.call
+        expect(collaborator).to have_received(:some_message)
+      end
+    end
   end
 end

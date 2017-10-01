@@ -2,6 +2,8 @@ require 'the_help/errors'
 
 module TheHelp
   class Service
+    ALLOW = true
+
     CB_NOT_AUTHORIZED = ->(service:, context:) {
       raise NotAuthorizedError, "Not authorized to access #{service.name} as #{context.inspect}."
     }
@@ -20,9 +22,26 @@ module TheHelp
         define_method(:authorized?, &block)
         private :authorized?
       end
+
+      def input(name)
+        required_inputs << name
+        attr_accessor name
+        private name, "#{name}="
+      end
+
+      def required_inputs
+        @required_inputs ||= Set.new
+      end
     end
 
-    def initialize(context:, not_authorized: CB_NOT_AUTHORIZED)
+    def initialize(context:, not_authorized: CB_NOT_AUTHORIZED, **inputs)
+      self.class.required_inputs.each do |r_input_name|
+        next if inputs.key?(r_input_name)
+        raise ArgumentError, "Missing required input: #{r_input_name}."
+      end
+      inputs.each do |name, value|
+        send("#{name}=", value)
+      end
       self.context = context
       self.not_authorized = not_authorized
     end
