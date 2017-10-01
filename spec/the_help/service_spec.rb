@@ -133,6 +133,21 @@ RSpec.describe TheHelp::Service do
       end
     end
 
+    shared_examples_for :it_uses_the_specified_input_value do
+      let(:collaborator) {
+        double('collaborator input', some_message: nil)
+      }
+
+      before(:each) do
+        service_args[:foo] = collaborator
+      end
+
+      it 'makes the specified input value available to the instance' do
+        subject.call
+        expect(collaborator).to have_received(:some_message)
+      end
+    end
+
     context 'when an input is defined with no default value' do
       let(:subclass) {
         Class.new(described_class) do
@@ -146,22 +161,43 @@ RSpec.describe TheHelp::Service do
         end
       }
 
-      let(:collaborator) {
-        double('collaborator input', some_message: nil)
-      }
-
-      before(:each) do
-        service_args[:foo] = collaborator
-      end
-
       it 'requires the input to be specified at initialization' do
         expect { subclass.new(context: authorization_context) }
           .to raise_error(ArgumentError, /Missing required .*foo/)
       end
 
-      it 'makes the input value available to the instance' do
-        subject.call
-        expect(collaborator).to have_received(:some_message)
+      it_behaves_like :it_uses_the_specified_input_value
+    end
+
+    context 'when an input is defined with a default value' do
+      let(:subclass) {
+        Class.new(described_class) do
+          input :foo, default: DefaultCollaborator
+
+          authorization_policy { TheHelp::Service::ALLOW }
+
+          main do
+            foo.some_message
+          end
+        end
+      }
+
+      let!(:default_collaborator) {
+        class_double('DefaultCollaborator').tap do |c|
+          c.as_stubbed_const
+          allow(c).to receive(:some_message)
+        end
+      }
+
+      context 'when initialized with a specified value' do
+        it_behaves_like :it_uses_the_specified_input_value
+      end
+
+      context 'when initialized without a specified value' do
+        it 'uses the default value' do
+          subject.call
+          expect(default_collaborator).to have_received(:some_message)
+        end
       end
     end
   end

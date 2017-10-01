@@ -23,9 +23,12 @@ module TheHelp
         private :authorized?
       end
 
-      def input(name)
-        required_inputs << name
-        attr_accessor name
+      def input(name, **options)
+        required_inputs << name unless options.key?(:default)
+        attr_writer name
+        define_method(name) do
+          instance_variable_get("@#{name}") || options[:default]
+        end
         private name, "#{name}="
       end
 
