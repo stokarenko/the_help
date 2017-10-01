@@ -201,4 +201,18 @@ RSpec.describe TheHelp::Service do
       end
     end
   end
+
+  context 'a subclass of a subclass of Service' do
+    it 'can override the main routine'
+
+    it 'can override the authorization policy'
+
+    it 'preserves original inputs'
+
+    it 'can add new inputs'
+
+    it 'can override the default value of an existing input'
+
+    it 'can add a default value to an existing input'
+  end
 end
