@@ -48,7 +48,7 @@ RSpec.describe TheHelp::Service do
         end
       }
 
-      context 'when no authorization is specified' do
+      shared_examples_for :it_is_not_authorized do
         context 'when no not_authorized callback is specified' do
           it 'does not execute the main routine' do
             subject.call rescue nil
@@ -81,6 +81,10 @@ RSpec.describe TheHelp::Service do
                                             context: authorization_context)
           end
         end
+      end
+
+      context 'when no authorization is specified' do
+        it_behaves_like :it_is_not_authorized
       end
 
       context 'when authorization is specified as a block' do
@@ -116,6 +120,15 @@ RSpec.describe TheHelp::Service do
           it 'returns itself' do
             expect(subject.call).to eq subject
           end
+        end
+
+        context 'when the context is not authorized' do
+          before(:each) do
+            allow(authorization_context)
+              .to receive(:meets_some_criteria?).and_return(false)
+          end
+
+          it_behaves_like :it_is_not_authorized
         end
       end
     end
