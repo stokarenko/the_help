@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'the_help/service'
 
 RSpec.describe TheHelp::Service do
@@ -22,7 +24,8 @@ RSpec.describe TheHelp::Service do
       let(:subclass) { Class.new(described_class) }
 
       it 'raises a ServiceNotImplementedError' do
-        expect { subject.call }.to raise_error(TheHelp::ServiceNotImplementedError)
+        expect { subject.call }
+          .to raise_error(TheHelp::ServiceNotImplementedError)
       end
     end
 
@@ -51,7 +54,7 @@ RSpec.describe TheHelp::Service do
       shared_examples_for :it_is_not_authorized do
         context 'when no not_authorized callback is specified' do
           it 'does not execute the main routine' do
-            subject.call rescue nil
+            expect { subject.call }.to raise_error
             expect(collaborator).not_to have_received(:some_message)
           end
 
@@ -74,7 +77,8 @@ RSpec.describe TheHelp::Service do
             expect(collaborator).not_to have_received(:some_message)
           end
 
-          it 'calls the not_authorized callback with the service class and context' do
+          it 'calls the not_authorized callback with the service class ' \
+             'and context' do
             subject.call
             expect(not_authorized)
               .to have_received(:call).with(service: subclass,
@@ -153,7 +157,9 @@ RSpec.describe TheHelp::Service do
         Class.new(described_class) do
           input :foo
 
-          authorization_policy { TheHelp::Service::ALLOW }
+          authorization_policy do
+            TheHelp::Service::ALLOW
+          end
 
           main do
             foo.some_message
@@ -174,7 +180,9 @@ RSpec.describe TheHelp::Service do
         Class.new(described_class) do
           input :foo, default: DefaultCollaborator
 
-          authorization_policy { TheHelp::Service::ALLOW }
+          authorization_policy do
+            TheHelp::Service::ALLOW
+          end
 
           main do
             foo.some_message

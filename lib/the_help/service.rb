@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'the_help/errors'
 
 module TheHelp
@@ -5,7 +7,8 @@ module TheHelp
     ALLOW = true
 
     CB_NOT_AUTHORIZED = ->(service:, context:) {
-      raise NotAuthorizedError, "Not authorized to access #{service.name} as #{context.inspect}."
+      raise NotAuthorizedError,
+            "Not authorized to access #{service.name} as #{context.inspect}."
     }
 
     class << self

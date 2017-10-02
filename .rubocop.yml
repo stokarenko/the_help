@@ -1,0 +1,11 @@
+AllCops:
+  TargetRubyVersion: 2.3
+
+Style/BlockDelimiters:
+  EnforcedStyle: semantic
+
+Style/Lambda:
+  EnforcedStyle: literal
+
+Metrics/BlockLength:
+  ExcludedMethods: context, describe, shared_examples_for
