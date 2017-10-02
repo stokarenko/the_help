@@ -5,6 +5,7 @@ require 'the_help/errors'
 module TheHelp
   class Service
     ALLOW = true
+    DENY = false
 
     CB_NOT_AUTHORIZED = ->(service:, context:) {
       raise NotAuthorizedError,
@@ -27,16 +28,24 @@ module TheHelp
       end
 
       def input(name, **options)
-        required_inputs << name unless options.key?(:default)
-        attr_writer name
-        define_method(name) do
-          instance_variable_get("@#{name}") || options[:default]
+        attr_accessor name
+        if options.key?(:default)
+          required_inputs.delete(name)
+          define_method(name) do
+            instance_variable_get("@#{name}") || options[:default]
+          end
+        else
+          required_inputs << name
         end
         private name, "#{name}="
       end
 
       def required_inputs
         @required_inputs ||= Set.new
+      end
+
+      def inherited(other)
+        other.instance_variable_set(:@required_inputs, required_inputs.dup)
       end
     end
 

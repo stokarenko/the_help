@@ -211,16 +211,90 @@ RSpec.describe TheHelp::Service do
   end
 
   context 'a subclass of a subclass of Service' do
-    it 'can override the main routine'
+    let(:intermediate_class) {
+      Class.new(described_class) do
+        input :collaborator
+        input :some_value, default: 1
+        input :some_other_value
 
-    it 'can override the authorization policy'
+        authorization_policy do
+          TheHelp::Service::DENY
+        end
 
-    it 'preserves original inputs'
+        main do
+          collaborator.message_one
+        end
+      end
+    }
 
-    it 'can add new inputs'
+    let(:subclass) {
+      Class.new(intermediate_class) do
+        input :collaborator_2
+        input :some_value, default: 2
+        input :some_other_value, default: :foo
 
-    it 'can override the default value of an existing input'
+        authorization_policy do
+          TheHelp::Service::ALLOW
+        end
 
-    it 'can add a default value to an existing input'
+        main do
+          super()
+          collaborator.message_two(some_other_value)
+          collaborator_2.a_message(some_value)
+        end
+      end
+    }
+
+    let(:collaborator) {
+      double('collaborator', message_one: nil, message_two: nil)
+    }
+
+    let(:collaborator_2) {
+      double('collaborator', a_message: nil)
+    }
+
+    subject { subclass.new(**service_args) }
+
+    before(:each) do
+      service_args[:collaborator] = collaborator
+      service_args[:collaborator_2] = collaborator_2
+    end
+
+    it 'preserves original inputs' do
+      subject.call
+      expect(collaborator).to have_received(:message_two)
+    end
+
+    it 'still requires original inputs that have no default' do
+      service_args.delete(:collaborator)
+      expect { subclass.new(**service_args) }
+        .to raise_error(ArgumentError, /Missing required .*collaborator/)
+    end
+
+    it 'can add new inputs' do
+      subject.call
+      expect(collaborator_2).to have_received(:a_message)
+    end
+
+    it 'does not add the new inputs to the intermediate class' do
+      service_args[:some_other_value] = 1
+      expect { intermediate_class.new(**service_args) }
+        .to raise_error(NoMethodError, /collaborator_2/)
+    end
+
+    it 'can override the default value of an existing input' do
+      subject.call
+      expect(collaborator_2).to have_received(:a_message).with(2)
+    end
+
+    it 'can add a default value to an existing input' do
+      subject.call
+      expect(collaborator).to have_received(:message_two).with(:foo)
+    end
+
+    it 'can call the original main routine with "super()"' do
+      subject.call
+      expect(collaborator).to have_received(:message_one)
+    end
   end
 end
