@@ -2,9 +2,12 @@
 
 require 'logger'
 require 'the_help/errors'
+require 'the_help/provides_callbacks'
 
 module TheHelp
   class Service
+    include ProvidesCallbacks
+
     CB_NOT_AUTHORIZED = ->(service:, context:) {
       raise NotAuthorizedError,
             "Not authorized to access #{service.name} as #{context.inspect}."
