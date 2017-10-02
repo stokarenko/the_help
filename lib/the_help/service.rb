@@ -5,34 +5,113 @@ require 'the_help/errors'
 require 'the_help/provides_callbacks'
 
 module TheHelp
+  # An Abstract Service Class with Authorization and Logging
+  #
+  # Define subclasses of Service to build out the service layer of your
+  # application.
+  #
+  # @example
+  # class CreateNewUserAccount < TheHelp::Service
+  #   input :user
+  #   input :send_welcome_message, default: true
+  #
+  #   authorization_policy do
+  #     authorized = false
+  #     call_service(Authorize, permission: :admin_users,
+  #                  allowed: ->() { authorized = true })
+  #     authorized
+  #   end
+  #
+  #   main do
+  #     # do something to create the user account
+  #     if send_welcome_message
+  #       call_service(SendWelcomeMessage, user: user,
+  #                    success: callback(:message_sent))
+  #     end
+  #   end
+  #
+  #   callback(:message_sent) do
+  #     # do something really important, I'm sure
+  #   end
+  # end
+  #
+  # class Authorize < TheHelp::Service
+  #   input :permission
+  #   input :allowed
+  #
+  #   authorization_policy allow_all: true
+  #
+  #   main do
+  #     if user_has_permission?
+  #       allowed.call
+  #     end
+  #   end
+  # end
+  #
+  # class SendWelcomeMessage < TheHelp::Service
+  #   input :user
+  #   input :success, default: ->() { }
+  #
+  #   main do
+  #     # whatever
+  #     success.call
+  #   end
+  # end
+  #
+  # CreateNewUserAccount.(context: current_user, user: new_user_object)
   class Service
     include ProvidesCallbacks
 
+    # The default :not_authorized callback
+    #
+    # It will raise a TheHelp::NotAuthorizedError when the context is not
+    # authorized to perform the service.
     CB_NOT_AUTHORIZED = ->(service:, context:) {
       raise NotAuthorizedError,
             "Not authorized to access #{service.name} as #{context.inspect}."
     }
 
     class << self
+      # Convenience method to instantiate the service and immediately call it
+      #
+      # Any arguments are passed to #initialize
+      #
+      # @return [Class] Returns the receiver
       def call(*args)
         new(*args).call
+        self
       end
 
+      # :nodoc:
       def inherited(other)
         other.instance_variable_set(:@required_inputs, required_inputs.dup)
       end
 
+      # :nodoc:
+      # instances need access to this, otherwise it would be made private
       def required_inputs
         @required_inputs ||= Set.new
       end
 
-      private
-
+      # Defines the primary routine of the service
+      #
+      # The code that will be run when the service is called, assuming it is
+      # unauthorized.
       def main(&block)
         define_method(:main, &block)
         private :main
+        self
       end
 
+      # Defines the service authorization policy
+      #
+      # If allow_all is set to true, or if the provided block (executed in the
+      # context of the service object) returns true, then the service will be
+      # run when called. Otherwise, the not_authorized callback will be invoked.
+      #
+      # @param allow_all [Boolean]
+      # @param block [Proc] executed in the context of the service instance (and
+      #   can therefore access all inputs to the service)
       def authorization_policy(allow_all: false, &block)
         if allow_all
           define_method(:authorized?) { true }
@@ -40,6 +119,7 @@ module TheHelp
           define_method(:authorized?, &block)
         end
         private :authorized?
+        self
       end
 
       def input(name, **options)
@@ -53,6 +133,7 @@ module TheHelp
           required_inputs << name
         end
         private name, "#{name}="
+        self
       end
     end
 

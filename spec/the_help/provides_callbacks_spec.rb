@@ -27,7 +27,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
 
     let(:collaborator) {
       double('collaborator', callback_received: nil).tap do |c|
-        allow(c).to receive(:do_something) { |done: |
+        allow(c).to receive(:do_something) { |done:|
           done.call
         }
       end
