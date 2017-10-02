@@ -9,3 +9,6 @@ Style/Lambda:
 
 Metrics/BlockLength:
   ExcludedMethods: context, describe, shared_examples_for
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented_relative_to_receiver

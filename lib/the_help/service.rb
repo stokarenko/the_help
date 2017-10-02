@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'logger'
 require 'the_help/errors'
 
 module TheHelp
@@ -49,7 +50,8 @@ module TheHelp
       end
     end
 
-    def initialize(context:, not_authorized: CB_NOT_AUTHORIZED, **inputs)
+    def initialize(context:, logger: Logger.new($stdout),
+                   not_authorized: CB_NOT_AUTHORIZED, **inputs)
       self.class.required_inputs.each do |r_input_name|
         next if inputs.key?(r_input_name)
         raise ArgumentError, "Missing required input: #{r_input_name}."
@@ -58,6 +60,7 @@ module TheHelp
         send("#{name}=", value)
       end
       self.context = context
+      self.logger = logger
       self.not_authorized = not_authorized
     end
 
@@ -73,7 +76,7 @@ module TheHelp
 
     private
 
-    attr_accessor :context, :not_authorized
+    attr_accessor :context, :logger, :not_authorized
 
     def authorized?
       false
@@ -81,6 +84,8 @@ module TheHelp
 
     def authorize!
       return if authorized?
+      logger.warn("Unauthorized attempt to access #{self.class.name} " \
+                  "as #{context.inspect}")
       not_authorized.call(service: self.class, context: context)
       throw :stop
     end

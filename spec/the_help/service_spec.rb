@@ -6,11 +6,19 @@ RSpec.describe TheHelp::Service do
   subject { described_class.new(**service_args) }
 
   let(:service_args) {
-    { context: authorization_context }
+    {
+      context: authorization_context,
+      logger: logger
+    }
   }
 
   let(:authorization_context) {
     double(:authorization_context)
+  }
+
+  let(:logger) {
+    instance_double('Logger',
+                    fatal: nil, error: nil, warn: nil, info: nil, debug: nil)
   }
 
   it 'raises an AbstractClassError when called directly' do
@@ -61,6 +69,14 @@ RSpec.describe TheHelp::Service do
           it 'raises a NotAuthorizedError' do
             expect { subject.call }.to raise_error(TheHelp::NotAuthorizedError)
           end
+
+          it 'logs the unauthorized service call' do
+            expect { subject.call }.to raise_error
+            expect(logger)
+              .to have_received(:warn)
+                    .with("Unauthorized attempt to access #{subclass.name} " \
+                          "as #{authorization_context.inspect}")
+          end
         end
 
         context 'when a not_authorized callback is specified' do
@@ -83,6 +99,14 @@ RSpec.describe TheHelp::Service do
             expect(not_authorized)
               .to have_received(:call).with(service: subclass,
                                             context: authorization_context)
+          end
+
+          it 'logs the unauthorized service call' do
+            subject.call
+            expect(logger)
+              .to have_received(:warn)
+                    .with("Unauthorized attempt to access #{subclass.name} " \
+                          "as #{authorization_context.inspect}")
           end
         end
       end
