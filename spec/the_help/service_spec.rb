@@ -204,9 +204,7 @@ RSpec.describe TheHelp::Service do
 
           input :foo
 
-          authorization_policy do
-            TheHelp::Service::ALLOW
-          end
+          authorization_policy allow_all: true
 
           main do
             foo.some_message
@@ -232,9 +230,7 @@ RSpec.describe TheHelp::Service do
 
           input :foo, default: DefaultCollaborator
 
-          authorization_policy do
-            TheHelp::Service::ALLOW
-          end
+          authorization_policy allow_all: true
 
           main do
             foo.some_message
@@ -274,10 +270,6 @@ RSpec.describe TheHelp::Service do
         input :some_value, default: 1
         input :some_other_value
 
-        authorization_policy do
-          TheHelp::Service::DENY
-        end
-
         main do
           collaborator.message_one
         end
@@ -295,9 +287,7 @@ RSpec.describe TheHelp::Service do
         input :some_value, default: 2
         input :some_other_value, default: :foo
 
-        authorization_policy do
-          TheHelp::Service::ALLOW
-        end
+        authorization_policy allow_all: true
 
         main do
           super()

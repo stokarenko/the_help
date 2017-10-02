@@ -5,9 +5,6 @@ require 'the_help/errors'
 
 module TheHelp
   class Service
-    ALLOW = true
-    DENY = false
-
     CB_NOT_AUTHORIZED = ->(service:, context:) {
       raise NotAuthorizedError,
             "Not authorized to access #{service.name} as #{context.inspect}."
@@ -23,8 +20,12 @@ module TheHelp
         private :main
       end
 
-      def authorization_policy(&block)
-        define_method(:authorized?, &block)
+      def authorization_policy(allow_all: false, &block)
+        if allow_all
+          define_method(:authorized?) { true }
+        else
+          define_method(:authorized?, &block)
+        end
         private :authorized?
       end
 
