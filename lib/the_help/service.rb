@@ -18,6 +18,16 @@ module TheHelp
         new(*args).call
       end
 
+      def inherited(other)
+        other.instance_variable_set(:@required_inputs, required_inputs.dup)
+      end
+
+      def required_inputs
+        @required_inputs ||= Set.new
+      end
+
+      private
+
       def main(&block)
         define_method(:main, &block)
         private :main
@@ -44,36 +54,21 @@ module TheHelp
         end
         private name, "#{name}="
       end
-
-      def required_inputs
-        @required_inputs ||= Set.new
-      end
-
-      def inherited(other)
-        other.instance_variable_set(:@required_inputs, required_inputs.dup)
-      end
     end
 
     def initialize(context:, logger: Logger.new($stdout),
                    not_authorized: CB_NOT_AUTHORIZED, **inputs)
-      self.class.required_inputs.each do |r_input_name|
-        next if inputs.key?(r_input_name)
-        raise ArgumentError, "Missing required input: #{r_input_name}."
-      end
-      inputs.each do |name, value|
-        send("#{name}=", value)
-      end
       self.context = context
       self.logger = logger
       self.not_authorized = not_authorized
+      self.inputs = inputs
     end
 
     def call
-      raise AbstractClassError if self.class == TheHelp::Service
-      raise ServiceNotImplementedError unless defined?(main)
+      validate_service_definition
       catch(:stop) do
-        authorize!
-        logger.info("Service call to #{self.class.name} for #{context.inspect}")
+        authorize
+        log_service_call
         main
       end
       self
@@ -82,12 +77,35 @@ module TheHelp
     private
 
     attr_accessor :context, :logger, :not_authorized
+    attr_reader :inputs
+
+    def inputs=(inputs)
+      @inputs = inputs
+      inputs.each { |name, value| send("#{name}=", value) }
+      validate_inputs
+    end
+
+    def validate_inputs
+      self.class.required_inputs.each do |r_input_name|
+        next if inputs.key?(r_input_name)
+        raise ArgumentError, "Missing required input: #{r_input_name}."
+      end
+    end
+
+    def validate_service_definition
+      raise AbstractClassError if self.class == TheHelp::Service
+      raise ServiceNotImplementedError unless defined?(main)
+    end
+
+    def log_service_call
+      logger.info("Service call to #{self.class.name} for #{context.inspect}")
+    end
 
     def authorized?
       false
     end
 
-    def authorize!
+    def authorize
       return if authorized?
       logger.warn("Unauthorized attempt to access #{self.class.name} " \
                   "as #{context.inspect}")
