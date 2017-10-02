@@ -40,6 +40,11 @@ RSpec.describe TheHelp::Service do
     context 'when the subclass defines a main routine' do
       let(:subclass) {
         Class.new(described_class) do
+          # because otherwise it would be empty when defined by Class.new
+          def self.name
+            'TestSubclass'
+          end
+
           main do
             collaborator.some_message
           end
@@ -62,7 +67,7 @@ RSpec.describe TheHelp::Service do
       shared_examples_for :it_is_not_authorized do
         context 'when no not_authorized callback is specified' do
           it 'does not execute the main routine' do
-            expect { subject.call }.to raise_error
+            expect { subject.call }.to raise_error(TheHelp::NotAuthorizedError)
             expect(collaborator).not_to have_received(:some_message)
           end
 
@@ -71,7 +76,7 @@ RSpec.describe TheHelp::Service do
           end
 
           it 'logs the unauthorized service call' do
-            expect { subject.call }.to raise_error
+            expect { subject.call }.to raise_error(TheHelp::NotAuthorizedError)
             expect(logger)
               .to have_received(:warn)
                     .with("Unauthorized attempt to access #{subclass.name} " \
@@ -118,6 +123,11 @@ RSpec.describe TheHelp::Service do
       context 'when authorization is specified as a block' do
         let(:subclass) {
           Class.new(described_class) do
+            # because otherwise it would be empty when defined by Class.new
+            def self.name
+              'TestSubclass'
+            end
+
             authorization_policy do
               context.meets_some_criteria?
             end
@@ -143,6 +153,14 @@ RSpec.describe TheHelp::Service do
           it 'executes the main routine' do
             subject.call
             expect(collaborator).to have_received(:some_message)
+          end
+
+          it 'logs that the service was called' do
+            subject.call
+            expect(logger)
+              .to have_received(:info)
+                    .with("Service call to #{subclass.name} for " \
+                          "#{authorization_context.inspect}")
           end
 
           it 'returns itself' do
@@ -179,6 +197,11 @@ RSpec.describe TheHelp::Service do
     context 'when an input is defined with no default value' do
       let(:subclass) {
         Class.new(described_class) do
+          # because otherwise it would be empty when defined by Class.new
+          def self.name
+            'TestSubclass'
+          end
+
           input :foo
 
           authorization_policy do
@@ -202,6 +225,11 @@ RSpec.describe TheHelp::Service do
     context 'when an input is defined with a default value' do
       let(:subclass) {
         Class.new(described_class) do
+          # because otherwise it would be empty when defined by Class.new
+          def self.name
+            'TestSubclass'
+          end
+
           input :foo, default: DefaultCollaborator
 
           authorization_policy do
@@ -237,6 +265,11 @@ RSpec.describe TheHelp::Service do
   context 'a subclass of a subclass of Service' do
     let(:intermediate_class) {
       Class.new(described_class) do
+        # because otherwise it would be empty when defined by Class.new
+        def self.name
+          'TestSubclass'
+        end
+
         input :collaborator
         input :some_value, default: 1
         input :some_other_value
@@ -253,6 +286,11 @@ RSpec.describe TheHelp::Service do
 
     let(:subclass) {
       Class.new(intermediate_class) do
+        # because otherwise it would be empty when defined by Class.new
+        def self.name
+          'TestSubclass2'
+        end
+
         input :collaborator_2
         input :some_value, default: 2
         input :some_other_value, default: :foo

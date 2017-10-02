@@ -69,6 +69,7 @@ module TheHelp
       raise ServiceNotImplementedError unless defined?(main)
       catch(:stop) do
         authorize!
+        logger.info("Service call to #{self.class.name} for #{context.inspect}")
         main
       end
       self
