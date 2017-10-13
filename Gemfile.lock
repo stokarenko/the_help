@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_help (0.1.0)
+    the_help (1.0.0)
 
 GEM
   remote: https://rubygems.org/
@@ -42,7 +42,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (~> 1.16.a)
   rake (~> 10.0)
   rspec (~> 3.0)
   rubocop (~> 0.50)
