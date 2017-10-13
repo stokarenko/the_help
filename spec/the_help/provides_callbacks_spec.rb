@@ -18,8 +18,8 @@ RSpec.describe TheHelp::ProvidesCallbacks do
           collaborator.do_something(done: callback(:my_callback))
         end
 
-        callback :my_callback do
-          collaborator.callback_received
+        callback :my_callback do |something: |
+          collaborator.callback_received(something)
         end
       end
       c.new(collaborator)
@@ -27,15 +27,15 @@ RSpec.describe TheHelp::ProvidesCallbacks do
 
     let(:collaborator) {
       double('collaborator', callback_received: nil).tap do |c|
-        allow(c).to receive(:do_something) { |done:|
-          done.call
+        allow(c).to receive(:do_something) { |done: |
+          done.call(something: 123)
         }
       end
     }
 
     it 'can allow a collaborator to call its callbacks' do
       subject.do_something
-      expect(collaborator).to have_received(:callback_received)
+      expect(collaborator).to have_received(:callback_received).with(123)
     end
 
     it 'does not expose callbacks as public methods' do

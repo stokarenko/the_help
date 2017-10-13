@@ -56,11 +56,11 @@ module TheHelp
       #   object when the callback is invoked.
       def callback(name, &block)
         define_method("#{name}_without_logging", &block)
-        define_method(name) do
+        define_method(name) do |*args|
           if defined?(logger)
             logger.debug("#{inspect} received callback :#{name}.")
           end
-          send("#{name}_without_logging")
+          send("#{name}_without_logging", *args)
         end
         private name
         self
