@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_help (1.0.1)
+    the_help (1.0.2)
 
 GEM
   remote: https://rubygems.org/
@@ -48,4 +48,4 @@ DEPENDENCIES
   the_help!
 
 BUNDLED WITH
-   1.16.0.pre.2
+   1.16.0
