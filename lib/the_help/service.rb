@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'logger'
+require 'set'
 require 'the_help/errors'
 require 'the_help/provides_callbacks'
 
