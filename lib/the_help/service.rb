@@ -208,5 +208,9 @@ module TheHelp
       not_authorized.call(service: self.class, context: context)
       throw :stop
     end
+
+    def stop!
+      throw :stop
+    end
   end
 end
