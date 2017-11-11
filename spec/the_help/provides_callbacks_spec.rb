@@ -18,7 +18,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
           collaborator.do_something(done: callback(:my_callback))
         end
 
-        callback :my_callback do |something: |
+        callback :my_callback do |something:|
           collaborator.callback_received(something)
         end
       end
@@ -27,7 +27,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
 
     let(:collaborator) {
       double('collaborator', callback_received: nil).tap do |c|
-        allow(c).to receive(:do_something) { |done: |
+        allow(c).to receive(:do_something) { |done:|
           done.call(something: 123)
         }
       end

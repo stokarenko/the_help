@@ -62,6 +62,7 @@ module TheHelp
   # CreateNewUserAccount.(context: current_user, user: new_user_object)
   class Service
     include ProvidesCallbacks
+    include ServiceCaller
 
     # The default :not_authorized callback
     #
@@ -73,6 +74,16 @@ module TheHelp
     }
 
     class << self
+      # Defines attr_accessors with scoping options
+      def attr_accessor(*names, make_private: false, private_reader: false,
+                        private_writer: false)
+        super(*names)
+        names.each do |name|
+          private name if make_private || private_reader
+          private "#{name}=" if make_private || private_writer
+        end
+      end
+
       # Convenience method to instantiate the service and immediately call it
       #
       # Any arguments are passed to #initialize
@@ -124,7 +135,7 @@ module TheHelp
       end
 
       def input(name, **options)
-        attr_accessor name
+        attr_accessor name, make_private: true
         if options.key?(:default)
           required_inputs.delete(name)
           define_method(name) do
@@ -133,7 +144,6 @@ module TheHelp
         else
           required_inputs << name
         end
-        private name, "#{name}="
         self
       end
     end
