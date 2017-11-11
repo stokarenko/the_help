@@ -4,6 +4,7 @@ require 'logger'
 require 'set'
 require 'the_help/errors'
 require 'the_help/provides_callbacks'
+require 'the_help/service_caller'
 
 module TheHelp
   # An Abstract Service Class with Authorization and Logging
