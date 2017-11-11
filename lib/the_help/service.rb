@@ -172,6 +172,9 @@ module TheHelp
     attr_accessor :context, :logger, :not_authorized
     attr_reader :inputs
 
+    alias service_context context
+    alias service_logger logger
+
     def inputs=(inputs)
       @inputs = inputs
       inputs.each { |name, value| send("#{name}=", value) }
