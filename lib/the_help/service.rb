@@ -62,6 +62,7 @@ module TheHelp
   # CreateNewUserAccount.(context: current_user, user: new_user_object)
   class Service
     include ProvidesCallbacks
+    include ServiceCaller
 
     # The default :not_authorized callback
     #

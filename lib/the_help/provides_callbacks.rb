@@ -54,6 +54,7 @@ module TheHelp
       # @param name [Symbol] The name of the callback
       # @param block [Proc] The code that will be executed in the context of the
       #   object when the callback is invoked.
+      # @return [self]
       def callback(name, &block)
         define_method("#{name}_without_logging", &block)
         define_method(name) do |*args|
@@ -61,6 +62,7 @@ module TheHelp
             logger.debug("#{inspect} received callback :#{name}.")
           end
           send("#{name}_without_logging", *args)
+          self
         end
         private name
         self
