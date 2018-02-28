@@ -126,7 +126,7 @@ module TheHelp
       #
       # @return [Class] Returns the receiver
       def call(*args, &block)
-        new(*args, &block).call
+        new(*args).call(&block)
         self
       end
 
@@ -190,11 +190,6 @@ module TheHelp
       self.logger = logger
       self.not_authorized = not_authorized
       self.inputs = inputs
-      if block_given?
-        self.result_handler = ->(result) {
-          yield result
-        }
-      end
     end
 
     def call
@@ -203,9 +198,7 @@ module TheHelp
         authorize
         log_service_call
         main
-        unless result_handler.nil?
-          result_handler.call(result)
-        end
+        yield result if block_given?
       end
       self
     end
