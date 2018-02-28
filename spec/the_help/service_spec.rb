@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe TheHelp::Service do
-  subject { described_class.new(**service_args) }
+  subject { -> { described_class.call(**service_args) } }
 
   let(:service_args) {
     {
@@ -24,7 +24,7 @@ RSpec.describe TheHelp::Service do
   end
 
   describe 'a subclass of Service' do
-    subject { subclass.new(**service_args) }
+    subject { -> { subclass.call(**service_args) } }
 
     context 'when the subclass does not define a "main" routine' do
       let(:subclass) { Class.new(described_class) }
@@ -162,7 +162,49 @@ RSpec.describe TheHelp::Service do
           end
 
           it 'returns itself' do
-            expect(subject.call).to eq subject
+            expect(subject.call).to eq subclass
+          end
+
+          context 'when called with a block' do
+            let(:effective_subclass) { subclass }
+
+            subject {
+              -> {
+                effective_subclass.call(**service_args) do |result|
+                  result_handler.call(result)
+                end
+              }
+            }
+
+            let(:result_handler) { instance_double('Proc', :result, call: nil) }
+
+            context 'when the service sets the result internally' do
+              let(:effective_subclass) {
+                Class.new(subclass) do
+                  main do
+                    collaborator.some_message
+                    self.result = :expected_result
+                  end
+                end
+              }
+
+              it 'yields the result to the provided block' do
+                subject.call
+                expect(result_handler)
+                  .to have_received(:call).with(:expected_result)
+              end
+            end
+
+            context 'when the service does not set a result internally' do
+              it 'raises  TheHelp::NoResultError' do
+                expect { subject.call }.to raise_error(TheHelp::NoResultError)
+              end
+
+              it 'does not try to call the provided block' do
+                subject.call rescue nil
+                expect(result_handler).not_to have_received(:call)
+              end
+            end
           end
         end
 
@@ -303,7 +345,7 @@ RSpec.describe TheHelp::Service do
       double('collaborator', a_message: nil)
     }
 
-    subject { subclass.new(**service_args) }
+    subject { -> { subclass.call(**service_args) } }
 
     before(:each) do
       service_args[:collaborator] = collaborator

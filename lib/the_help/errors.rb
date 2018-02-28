@@ -5,5 +5,6 @@ module TheHelp
     class AbstractClassError < StandardError; end
     class ServiceNotImplementedError < StandardError; end
     class NotAuthorizedError < RuntimeError; end
+    class NoResultError < StandardError; end
   end
 end

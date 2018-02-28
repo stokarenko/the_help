@@ -58,6 +58,44 @@ module TheHelp
   #   end
   #
   #   CreateNewUserAccount.(context: current_user, user: new_user_object)
+  #
+  # @example Calling services with a block
+  #
+  #   # Calling a service with a block when the service is not designed to
+  #   # receive one will result in an exception being raised
+  #
+  #   class DoesNotTakeBlock < TheHelp::Service
+  #     authorization_policy allow_all: true
+  #
+  #     main do
+  #       # whatever
+  #     end
+  #   end
+  #
+  #   DoesNotTakeBlock.call { |result| true } # raises TheHelp::NoResultError
+  #
+  #   # However, if the service *is* designed to receive a block (by explicitly
+  #   # assigning to the internal `#result` attribute in the main routine), the
+  #   # result will be yielded to the block if a block is present.
+  #
+  #   class CanTakeABlock < TheHelp::Service
+  #     authorization_policy allow_all: true
+  #
+  #     main do
+  #       self.result = :the_service_result
+  #     end
+  #   end
+  #
+  #   service_result = nil
+  #
+  #   CanTakeABlock.call() # works just fine
+  #   service_result
+  #   #=> nil              # but obviously the result is just discarded
+  #
+  #   CanTakeABlock.call { |result| service_result = result }
+  #   service_result
+  #   #=> :the_service_result
+  #
   class Service
     include ProvidesCallbacks
     include ServiceCaller
@@ -87,8 +125,8 @@ module TheHelp
       # Any arguments are passed to #initialize
       #
       # @return [Class] Returns the receiver
-      def call(*args)
-        new(*args).call
+      def call(*args, &block)
+        new(*args, &block).call
         self
       end
 
@@ -152,6 +190,11 @@ module TheHelp
       self.logger = logger
       self.not_authorized = not_authorized
       self.inputs = inputs
+      if block_given?
+        self.result_handler = ->(result) {
+          yield result
+        }
+      end
     end
 
     def call
@@ -160,13 +203,17 @@ module TheHelp
         authorize
         log_service_call
         main
+        unless result_handler.nil?
+          result_handler.call(result)
+        end
       end
       self
     end
 
     private
 
-    attr_accessor :context, :logger, :not_authorized
+    attr_accessor :context, :logger, :not_authorized, :result_handler
+    attr_writer :result
     attr_reader :inputs
 
     alias service_context context
@@ -208,6 +255,11 @@ module TheHelp
 
     def stop!
       throw :stop
+    end
+
+    def result
+      raise TheHelp::NoResultError unless defined?(@result)
+      @result
     end
   end
 end
