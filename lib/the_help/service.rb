@@ -10,54 +10,54 @@ module TheHelp
   # application.
   #
   # @example
-  # class CreateNewUserAccount < TheHelp::Service
-  #   input :user
-  #   input :send_welcome_message, default: true
+  #   class CreateNewUserAccount < TheHelp::Service
+  #     input :user
+  #     input :send_welcome_message, default: true
   #
-  #   authorization_policy do
-  #     authorized = false
-  #     call_service(Authorize, permission: :admin_users,
-  #                  allowed: ->() { authorized = true })
-  #     authorized
-  #   end
+  #     authorization_policy do
+  #       authorized = false
+  #       call_service(Authorize, permission: :admin_users,
+  #                    allowed: ->() { authorized = true })
+  #       authorized
+  #     end
   #
-  #   main do
-  #     # do something to create the user account
-  #     if send_welcome_message
-  #       call_service(SendWelcomeMessage, user: user,
-  #                    success: callback(:message_sent))
+  #     main do
+  #       # do something to create the user account
+  #       if send_welcome_message
+  #         call_service(SendWelcomeMessage, user: user,
+  #                      success: callback(:message_sent))
+  #       end
+  #     end
+  #
+  #     callback(:message_sent) do
+  #       # do something really important, I'm sure
   #     end
   #   end
   #
-  #   callback(:message_sent) do
-  #     # do something really important, I'm sure
-  #   end
-  # end
+  #   class Authorize < TheHelp::Service
+  #     input :permission
+  #     input :allowed
   #
-  # class Authorize < TheHelp::Service
-  #   input :permission
-  #   input :allowed
+  #     authorization_policy allow_all: true
   #
-  #   authorization_policy allow_all: true
-  #
-  #   main do
-  #     if user_has_permission?
-  #       allowed.call
+  #     main do
+  #       if user_has_permission?
+  #         allowed.call
+  #       end
   #     end
   #   end
-  # end
   #
-  # class SendWelcomeMessage < TheHelp::Service
-  #   input :user
-  #   input :success, default: ->() { }
+  #   class SendWelcomeMessage < TheHelp::Service
+  #     input :user
+  #     input :success, default: ->() { }
   #
-  #   main do
-  #     # whatever
-  #     success.call
+  #     main do
+  #       # whatever
+  #       success.call
+  #     end
   #   end
-  # end
   #
-  # CreateNewUserAccount.(context: current_user, user: new_user_object)
+  #   CreateNewUserAccount.(context: current_user, user: new_user_object)
   class Service
     include ProvidesCallbacks
     include ServiceCaller

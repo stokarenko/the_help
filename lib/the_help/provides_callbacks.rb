@@ -4,28 +4,28 @@ module TheHelp
   # Adds a callback DSL to including classes
   #
   # @example
-  # class Foo
-  #   attr_accessor :collaborator
+  #   class Foo
+  #     attr_accessor :collaborator
   #
-  #   def do_something
-  #     collaborator.do_some_other_thing(when_done: callback(:it_was_done))
+  #     def do_something
+  #       collaborator.do_some_other_thing(when_done: callback(:it_was_done))
+  #     end
+  #
+  #     callback(:it_was_done) do |some_arg:|
+  #       puts "Yay! #{some_arg}"
+  #     end
   #   end
   #
-  #   callback(:it_was_done) do |some_arg:|
-  #     puts "Yay! #{some_arg}"
+  #   class Bar
+  #    def do_some_other_thing(when_done:)
+  #      when_done.call('done by Bar')
+  #    end
   #   end
-  # end
   #
-  # class Bar
-  #  def do_some_other_thing(when_done:)
-  #    when_done.call('done by Bar')
-  #  end
-  # end
-  #
-  # f = Foo.new
-  # f.collaborator = Bar.new
-  # f.do_something
-  # # STDOUT: "Yay! done by Bar"
+  #   f = Foo.new
+  #   f.collaborator = Bar.new
+  #   f.do_something
+  #   # STDOUT: "Yay! done by Bar"
   #
   # Callbacks can be given to collaborating objects, but the actual methods are
   # defined as private methods. This allows the object to control which other
