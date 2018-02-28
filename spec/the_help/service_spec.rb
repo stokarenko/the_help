@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'the_help/service'
-
 RSpec.describe TheHelp::Service do
   subject { described_class.new(**service_args) }
 

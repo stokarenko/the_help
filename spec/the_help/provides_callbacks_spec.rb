@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'the_help/provides_callbacks'
-
 RSpec.describe TheHelp::ProvidesCallbacks do
   describe 'an instance of an including class' do
     subject {

@@ -2,9 +2,6 @@
 
 require 'logger'
 require 'set'
-require 'the_help/errors'
-require 'the_help/provides_callbacks'
-require 'the_help/service_caller'
 
 module TheHelp
   # An Abstract Service Class with Authorization and Logging
@@ -70,7 +67,7 @@ module TheHelp
     # It will raise a TheHelp::NotAuthorizedError when the context is not
     # authorized to perform the service.
     CB_NOT_AUTHORIZED = ->(service:, context:) {
-      raise NotAuthorizedError,
+      raise TheHelp::NotAuthorizedError,
             "Not authorized to access #{service.name} as #{context.inspect}."
     }
 
@@ -189,8 +186,8 @@ module TheHelp
     end
 
     def validate_service_definition
-      raise AbstractClassError if self.class == TheHelp::Service
-      raise ServiceNotImplementedError unless defined?(main)
+      raise TheHelp::AbstractClassError if self.class == TheHelp::Service
+      raise TheHelp::ServiceNotImplementedError unless defined?(main)
     end
 
     def log_service_call

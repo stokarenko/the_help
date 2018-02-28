@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'the_help/service_caller'
-
 RSpec.describe TheHelp::ServiceCaller do
   let(:includer) {
     Class.new do
