@@ -185,6 +185,11 @@ RSpec.describe TheHelp::Service do
                 subject.call { |r|  result = r }
                 expect(result).to eq :expected_result
               end
+
+              it 'returns the result of the block' do
+                result = subject.call { |_r| 'the value' }
+                expect(result).to eq 'the value'
+              end
             end
 
             context 'when the service does not set a result internally' do

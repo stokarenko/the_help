@@ -198,14 +198,15 @@ module TheHelp
         authorize
         log_service_call
         main
-        yield result if block_given?
+        self.block_result = yield result if block_given?
       end
+      return block_result if block_given?
       self
     end
 
     private
 
-    attr_accessor :context, :logger, :not_authorized, :result_handler
+    attr_accessor :context, :logger, :not_authorized, :block_result
     attr_writer :result
     attr_reader :inputs
 
