@@ -32,12 +32,12 @@ module TheHelp
     # @param args [Hash<Symbol, Object>] Any additional keyword arguments are
     #        passed directly to the service.
     # @return [self]
-    def call_service(service, **args)
+    def call_service(service, **args, &block)
       service_args = {
         context: service_context,
         logger: service_logger
       }.merge(args)
-      service.call(**service_args)
+      service.call(**service_args, &block)
       self
     end
   end

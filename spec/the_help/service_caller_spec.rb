@@ -6,6 +6,7 @@ RSpec.describe TheHelp::ServiceCaller do
       include TheHelp::ServiceCaller
 
       attr_accessor :service, :service_context, :service_logger, :arg1, :arg2
+      attr_accessor :result
 
       def initialize(**args)
         args.each do |(k, v)|
@@ -14,9 +15,11 @@ RSpec.describe TheHelp::ServiceCaller do
       end
 
       def do_something
-        call_service(service,
-                     arg1: arg1,
-                     arg2: arg2)
+        call_service(service, arg1: arg1, arg2: arg2)
+      end
+
+      def do_something_with_block
+        call_service(service, arg1: arg1, arg2: arg2) { |r| self.result = r }
       end
     end
   }
@@ -31,7 +34,7 @@ RSpec.describe TheHelp::ServiceCaller do
     )
   }
 
-  let(:service) { instance_double('Proc', call: nil) }
+  let(:service) { instance_double('Proc', :service, call: nil) }
   let(:service_context) { double('context') }
   let(:service_logger) { double('logger') }
   let(:arg1) { double('arg1') }
@@ -46,5 +49,11 @@ RSpec.describe TheHelp::ServiceCaller do
       arg1: arg1,
       arg2: arg2
     )
+  end
+
+  it 'sends the provided block to the service' do
+    allow(service).to receive(:call).and_yield(42)
+    subject.do_something_with_block
+    expect(subject.result).to eq 42
   end
 end
