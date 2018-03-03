@@ -123,10 +123,9 @@ module TheHelp
       # Convenience method to instantiate the service and immediately call it
       #
       # Any arguments are passed to #initialize
-      #
-      # @return [Class] Returns the receiver
       def call(*args, &block)
-        new(*args).call(&block)
+        result = new(*args).call(&block)
+        return result if block_given?
         self
       end
 

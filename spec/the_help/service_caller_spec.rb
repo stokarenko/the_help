@@ -34,26 +34,44 @@ RSpec.describe TheHelp::ServiceCaller do
     )
   }
 
-  let(:service) { instance_double('Proc', :service, call: nil) }
+  let(:service) {
+    Class.new(TheHelp::Service) do
+      input :arg1
+      input :arg2
+
+      authorization_policy allow_all: true
+
+      main do
+        self.result = 'the result'
+      end
+    end
+  }
+
   let(:service_context) { double('context') }
-  let(:service_logger) { double('logger') }
+  let(:service_logger) { double('logger').as_null_object }
   let(:arg1) { double('arg1') }
   let(:arg2) { double('arg2') }
 
   it "calls the specified service using the including module's " \
      'service_context and service_logger' do
-    subject.do_something
-    expect(service).to have_received(:call).with(
+    expect(service).to receive(:call).with(
       context: service_context,
       logger: service_logger,
       arg1: arg1,
       arg2: arg2
     )
+    subject.do_something
   end
 
   it 'sends the provided block to the service' do
-    allow(service).to receive(:call).and_yield(42)
     subject.do_something_with_block
-    expect(subject.result).to eq 42
+    expect(subject.result).to eq 'the result'
+  end
+
+  it 'returns the result of calling the service' do
+    result = subject.do_something
+    expect(result).to eq service
+    result = subject.do_something_with_block
+    expect(result).to eq 'the result'
   end
 end
