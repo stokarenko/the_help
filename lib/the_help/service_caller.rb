@@ -38,7 +38,6 @@ module TheHelp
         logger: service_logger
       }.merge(args)
       service.call(**service_args, &block)
-      self
     end
   end
 end
