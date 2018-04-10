@@ -125,7 +125,7 @@ module TheHelp
       # Any arguments are passed to #initialize
       def call(*args, &block)
         result = new(*args).call(&block)
-        return result if block_given?
+        return result unless result.is_a?(self)
         self
       end
 
@@ -200,6 +200,7 @@ module TheHelp
         self.block_result = yield result if block_given?
       end
       return block_result if block_given?
+      return result if result_set?
       self
     end
 
@@ -251,8 +252,12 @@ module TheHelp
     end
 
     def result
-      raise TheHelp::NoResultError unless defined?(@result)
+      raise TheHelp::NoResultError unless result_set?
       @result
+    end
+
+    def result_set?
+      defined?(@result)
     end
   end
 end

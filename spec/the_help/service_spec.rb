@@ -161,8 +161,27 @@ RSpec.describe TheHelp::Service do
                           "#{authorization_context.inspect}")
           end
 
-          it 'returns itself' do
-            expect(subject.call).to eq subject
+          context 'when the service does not set a result internally' do
+            it 'returns itself' do
+              expect(subject.call).to eq subject
+            end
+          end
+
+          context 'when the service sets a result internally' do
+            let(:effective_subclass) {
+              Class.new(subclass) do
+                main do
+                  collaborator.some_message
+                  self.result = :expected_result
+                end
+              end
+            }
+
+            subject { effective_subclass.new(**service_args) }
+
+            it 'returns the result' do
+              expect(subject.call).to eq :expected_result
+            end
           end
 
           context 'when called with a block' do

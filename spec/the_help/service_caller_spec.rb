@@ -70,7 +70,7 @@ RSpec.describe TheHelp::ServiceCaller do
 
   it 'returns the result of calling the service' do
     result = subject.do_something
-    expect(result).to eq service
+    expect(result).to eq 'the result'
     result = subject.do_something_with_block
     expect(result).to eq 'the result'
   end
