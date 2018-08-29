@@ -159,6 +159,7 @@ RSpec.describe TheHelp::Service do
               .to have_received(:info)
                     .with("Service call to #{subclass.name} for " \
                           "#{authorization_context.inspect}")
+            expect(logger).to have_received(:debug).with('with inputs: {}')
           end
 
           context 'when the service does not set a result internally' do
