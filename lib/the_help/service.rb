@@ -233,7 +233,6 @@ module TheHelp
 
     def log_service_call
       logger.info("Service call to #{self.class.name} for #{context.inspect}")
-      logger.debug("with inputs: #{inputs.inspect}")
     end
 
     def authorized?
