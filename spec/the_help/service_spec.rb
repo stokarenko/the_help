@@ -23,6 +23,63 @@ RSpec.describe TheHelp::Service do
     expect { subject.call }.to raise_error(TheHelp::AbstractClassError)
   end
 
+  describe 'a service that calls another service and executes `stop!` in a ' \
+           'callback' do
+    let(:service_a) {
+      Class.new(described_class) do
+        def self.name
+          'OuterService'
+        end
+
+        input :collaborator
+        input :modifier
+
+        authorization_policy allow_all: true
+
+        main do
+          call_service(collaborator,
+                       and_run: method(:stop!),
+                       modifier: modifier)
+          run_callback(modifier, :outer_result)
+        end
+      end
+    }
+
+    let(:service_b) {
+      Class.new(described_class) do
+        def self.name
+          'InnerService'
+        end
+
+        input :and_run
+        input :modifier
+
+        authorization_policy allow_all: true
+
+        main do
+          run_callback(and_run)
+          run_callback(modifier, :inner_result)
+        end
+      end
+    }
+
+    let(:modifier) { instance_double('Proc', call: nil) }
+
+    subject {
+      service_a.new(collaborator: service_b, modifier: modifier, **service_args)
+    }
+
+    it 'stops the outer service' do
+      subject.call
+      expect(modifier).not_to have_received(:call).with(:outer_result)
+    end
+
+    it 'does not stop the inner service' do
+      subject.call
+      expect(modifier).to have_received(:call).with(:inner_result)
+    end
+  end
+
   describe 'a subclass of Service' do
     subject { subclass.new(**service_args) }
 

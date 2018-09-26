@@ -1,8 +1,8 @@
 # TheHelp
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/the_help`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+TheHelp is a framework for developing service objects in a way that encourages
+adherence to the [Single Responsibility Principle][SRP] and [Tell Don't
+Ask][TDA]
 
 ## Installation
 
@@ -22,7 +22,122 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Create subclasses of [`TheHelp::Service`][lib/the_help/service.rb] and call
+them.
+
+Make it easier to call a service by including
+[`TheHelp::ServiceCaller`][lib/the_help/service_caller.rb].
+
+### Running Callbacks
+
+This library encourages you to pass in callbacks to a service rather than
+relying on a return value from the service call. For example:
+
+```ruby
+class Foo < TheHelp::Service
+  authorization_policy allow_all: true
+
+  main do
+    call_service(GetSomeWidgets,
+                 customer_id: 12345,
+                 each_widget: method(:process_widget),
+                 invalid_customer: method(:no_customer),
+                 no_widgets_found: method(:no_widgets))
+    do_something_else
+  end
+
+  private
+
+  def process_widget(widget)
+    # do something with it
+  end
+
+  def invalid_customer
+    # handle this case
+    stop!
+  end
+
+  def no_widgets
+    # handle this case
+  end
+
+  def do_something_else
+    # ...
+  end
+end
+```
+
+When writing a service that accepts callbacks like this, do not simply run
+`#call` on the callback that was passed in. Instead you must use the
+`#run_callback` method. This ensures that, if the callback method you pass in
+tries to halt the execution of the service, it will behave as expected.
+
+In the above service, it is clear that the intention is to stop executing the
+`Foo` service in the case where `GetSomeWidgets` reports back that the customer
+was invalid. However, if `GetSomeWidgets` is implemented as:
+
+```ruby
+class GetSomeWidgets < TheHelp::Service
+  input :customer_id
+  input :each_widget
+  input :invalid_customer
+  input :no_widgets_found
+
+  authorization_policy allow_all: true
+
+  main do
+    set_some_stuff_up
+    if customer_invalid?
+      invalid_customer.call
+      no_widgets_found.call
+      do_some_important_cleanup_for_invalid_customers
+    else
+      #...
+    end
+  end
+
+  #...
+end
+```
+
+then the problem is that the call to `#stop!` in the `Foo#invalid_customer`
+callback will not just stop the `Foo` service, it will also stop the
+`GetSomeWidgets` service at the point where the callback is executed (because it
+uses `throw` behind the scenes.) This would cause the
+`do_some_important_cleanup_for_invalid_customers` method to never be called.
+
+You can protect yourself from this by implementing `GetSomeWidgets` like this,
+instead:
+
+```ruby
+class GetSomeWidgets < TheHelp::Service
+  input :customer_id
+  input :each_widget
+  input :invalid_customer
+  input :no_widgets_found
+
+  authorization_policy allow_all: true
+
+  main do
+    set_some_stuff_up
+    if customer_invalid?
+      run_callback(invalid_customer)
+      run_callback(no_widgets_found)
+      do_some_important_cleanup_for_invalid_customers
+    else
+      #...
+    end
+  end
+
+  #...
+end
+```
+
+This will ensure that callbacks only stop the service that provides them, not
+the service that calls them. (If you really do need to allow the calling service
+to stop the execution of the inner service, you could raise an exception or
+throw a symbol other than `:stop`; but do so with caution, since it may have
+unintended consequences further down the stack.)
 
 ## Development
 
@@ -41,3 +156,6 @@ The gem is available as open source under the terms of the [MIT License](https:/
 ## Code of Conduct
 
 Everyone interacting in the TheHelp project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/jwilger/the_help/blob/master/CODE_OF_CONDUCT.md).
+
+[SRP]: https://en.wikipedia.org/wiki/Single_responsibility_principle
+[TDA]: https://martinfowler.com/bliki/TellDontAsk.html
