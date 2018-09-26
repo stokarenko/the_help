@@ -22,11 +22,11 @@ Or install it yourself as:
 
 ## Usage
 
-Create subclasses of [`TheHelp::Service`][lib/the_help/service.rb] and call
+Create subclasses of [`TheHelp::Service`](lib/the_help/service.rb) and call
 them.
 
 Make it easier to call a service by including
-[`TheHelp::ServiceCaller`][lib/the_help/service_caller.rb].
+[`TheHelp::ServiceCaller`](lib/the_help/service_caller.rb).
 
 ### Running Callbacks
 
