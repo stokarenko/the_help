@@ -29,8 +29,8 @@ module TheHelp
   #       end
   #     end
   #
-  #     callback(:message_sent) do
-  #       # do something really important, I'm sure
+  #     callback(:message_sent) do |message|
+  #       # do something really important with `message`, I'm sure
   #     end
   #   end
   #
@@ -49,11 +49,12 @@ module TheHelp
   #
   #   class SendWelcomeMessage < TheHelp::Service
   #     input :user
-  #     input :success, default: ->() { }
+  #     input :success, default: ->(message) { }
   #
   #     main do
-  #       # whatever
-  #       success.call
+  #       message = 'Hello, world!'
+  #       # do something with message...
+  #       run_callback(success, message)
   #     end
   #   end
   #
@@ -96,6 +97,7 @@ module TheHelp
   #   service_result
   #   #=> :the_service_result
   #
+  # @note See README section "Running Callbacks"
   class Service
     include ProvidesCallbacks
     include ServiceCaller
@@ -189,6 +191,7 @@ module TheHelp
       self.logger = logger
       self.not_authorized = not_authorized
       self.inputs = inputs
+      self.stop_caller = false
     end
 
     def call
@@ -199,6 +202,7 @@ module TheHelp
         main
         self.block_result = yield result if block_given?
       end
+      throw :stop if stop_caller
       return block_result if block_given?
       return result if result_set?
       self
@@ -206,7 +210,8 @@ module TheHelp
 
     private
 
-    attr_accessor :context, :logger, :not_authorized, :block_result
+    attr_accessor :context, :logger, :not_authorized, :block_result,
+                  :stop_caller
     attr_writer :result
     attr_reader :inputs
 
@@ -243,8 +248,8 @@ module TheHelp
       return if authorized?
       logger.warn("Unauthorized attempt to access #{self.class.name} " \
                   "as #{context.inspect}")
-      not_authorized.call(service: self.class, context: context)
-      throw :stop
+      run_callback(not_authorized, service: self.class, context: context)
+      stop!
     end
 
     def stop!
@@ -258,6 +263,15 @@ module TheHelp
 
     def result_set?
       defined?(@result)
+    end
+
+    def run_callback(callback, *args)
+      continue = false
+      continue = catch(:stop) do
+        callback.call(*args)
+        true
+      end
+      self.stop_caller ||= !continue
     end
   end
 end
