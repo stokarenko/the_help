@@ -237,7 +237,8 @@ module TheHelp
     end
 
     def log_service_call
-      logger.info("Service call to #{self.class.name} for #{context.inspect}")
+      logger.info("Service call to #{self.class.name}/#{__id__} " \
+                  "for #{context.inspect}")
     end
 
     def authorized?
@@ -246,7 +247,7 @@ module TheHelp
 
     def authorize
       return if authorized?
-      logger.warn("Unauthorized attempt to access #{self.class.name} " \
+      logger.warn("Unauthorized attempt to access #{self.class.name}/#{__id__} " \
                   "as #{context.inspect}")
       run_callback(not_authorized, service: self.class, context: context)
       stop!

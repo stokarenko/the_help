@@ -132,10 +132,16 @@ RSpec.describe TheHelp::Service do
 
           it 'logs the unauthorized service call' do
             expect { subject.call }.to raise_error(TheHelp::NotAuthorizedError)
-            expect(logger)
-              .to have_received(:warn)
-                    .with("Unauthorized attempt to access #{subclass.name} " \
-                          "as #{authorization_context.inspect}")
+            expect(logger).to(
+              have_received(:warn)
+              .with(
+                match(
+                  Regexp.new("Unauthorized attempt to access " \
+                             "#{subclass.name}/\\w+ " \
+                             "as #{authorization_context.inspect}")
+                )
+              )
+            )
           end
         end
 
@@ -163,10 +169,16 @@ RSpec.describe TheHelp::Service do
 
           it 'logs the unauthorized service call' do
             subject.call
-            expect(logger)
-              .to have_received(:warn)
-                    .with("Unauthorized attempt to access #{subclass.name} " \
-                          "as #{authorization_context.inspect}")
+            expect(logger).to(
+              have_received(:warn)
+              .with(
+                match(
+                  Regexp.new("Unauthorized attempt to access " \
+                             "#{subclass.name}/\\w+ " \
+                             "as #{authorization_context.inspect}")
+                )
+              )
+            )
           end
         end
       end
@@ -212,10 +224,16 @@ RSpec.describe TheHelp::Service do
 
           it 'logs that the service was called' do
             subject.call
-            expect(logger)
-              .to have_received(:info)
-                    .with("Service call to #{subclass.name} for " \
-                          "#{authorization_context.inspect}")
+            expect(logger).to(
+              have_received(:info)
+              .with(
+                match(
+                  Regexp.new("Service call to " \
+                             "#{subclass.name}/\\w+ " \
+                             "for #{authorization_context.inspect}")
+                )
+              )
+            )
           end
 
           context 'when the service does not set a result internally' do
