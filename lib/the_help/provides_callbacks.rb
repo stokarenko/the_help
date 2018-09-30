@@ -59,7 +59,8 @@ module TheHelp
         define_method("#{name}_without_logging", &block)
         define_method(name) do |*args|
           if defined?(logger)
-            logger.debug("#{inspect} received callback :#{name}.")
+            logger.debug("#{self.class.name}/#{__id__} received callback " \
+                         ":#{name}.")
           end
           send("#{name}_without_logging", *args)
           self
