@@ -6,6 +6,10 @@ RSpec.describe TheHelp::ProvidesCallbacks do
       c = Class.new do
         include TheHelp::ProvidesCallbacks
 
+        def self.name
+          'TestClassThingy'
+        end
+
         attr_accessor :collaborator
 
         def initialize(collaborator)
@@ -57,7 +61,8 @@ RSpec.describe TheHelp::ProvidesCallbacks do
         subject.do_something
         expect(logger)
           .to have_received(:debug)
-                .with("#{subject.inspect} received callback :my_callback.")
+          .with("#{subject.class.name}/#{subject.__id__} received callback " \
+                ':my_callback.')
       end
     end
   end

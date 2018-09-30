@@ -37,6 +37,8 @@ module TheHelp
         context: service_context,
         logger: service_logger
       }.merge(args)
+      service_logger.debug("#{self.class.name}/#{__id__} called service " \
+                           "#{service.name}")
       service.call(**service_args, &block)
     end
   end
