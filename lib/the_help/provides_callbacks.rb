@@ -38,11 +38,27 @@ module TheHelp
   # If the including class defines a #logger instance method, a debug-level
   # message will be logged indicating that the callback was invoked.
   module ProvidesCallbacks
+    class CallbackNotDefinedError < StandardError; end
+
     def self.included(other)
       other.class_eval do
         extend TheHelp::ProvidesCallbacks::ClassMethods
-        alias_method :callback, :method
       end
+    end
+
+    def callback(callback_name)
+      return method(callback_name) if _provides_callbacks_callback_defined?(
+        callback_name
+      )
+
+      raise CallbackNotDefinedError,
+            "The callback :#{callback_name} has not been defined."
+    end
+
+    private
+
+    def _provides_callbacks_callback_defined?(callback_name)
+      self.class.send(:_provides_callbacks_callback_defined?, callback_name)
     end
 
     # Classes that include ProvidesCallbacks are extended with these
@@ -64,32 +80,41 @@ module TheHelp
       #        invoked.
       # @return [self]
       def callback(name, &block)
+        _provides_callbacks_defined_callbacks << name.to_sym
         without_logging = "#{name}_without_logging".to_sym
-        provides_callbacks_define_method_with_block(without_logging, &block)
-        provides_callbacks_alias_method(without_logging, name)
-        provides_callbacks_define_wrapper(name, without_logging)
+        _provides_callbacks_define_method_with_block(without_logging, &block)
+        _provides_callbacks_alias_method(without_logging, name)
+        _provides_callbacks_define_wrapper(name, without_logging)
         self
       end
 
-      def provides_callbacks_method_defined?(name)
+      def _provides_callbacks_callback_defined?(name)
+        _provides_callbacks_defined_callbacks.include?(name.to_sym)
+      end
+
+      def _provides_callbacks_defined_callbacks
+        @_provides_callbacks_defined_callbacks ||= Set.new
+      end
+
+      def _provides_callbacks_method_defined?(name)
         method_defined?(name) || private_method_defined?(name)
       end
 
-      def provides_callbacks_define_method_with_block(without_logging, &block)
+      def _provides_callbacks_define_method_with_block(without_logging, &block)
         return unless block_given?
 
         define_method(without_logging, &block)
         private without_logging
       end
 
-      def provides_callbacks_alias_method(without_logging, name)
-        return unless provides_callbacks_method_defined?(name)
+      def _provides_callbacks_alias_method(without_logging, name)
+        return unless _provides_callbacks_method_defined?(name)
 
         alias_method without_logging, name
         private without_logging
       end
 
-      def provides_callbacks_define_wrapper(name, without_logging)
+      def _provides_callbacks_define_wrapper(name, without_logging)
         make_public = public_method_defined?(name)
         define_method(name) do |*args|
           if defined?(logger)
