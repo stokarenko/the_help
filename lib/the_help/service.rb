@@ -237,8 +237,8 @@ module TheHelp
     end
 
     def log_service_call
-      logger.info("Service call to #{self.class.name}/#{__id__} " \
-                  "for #{context.inspect}")
+      logger.debug("Service call to #{self.class.name}/#{__id__} " \
+                   "for #{context.inspect}")
     end
 
     def authorized?

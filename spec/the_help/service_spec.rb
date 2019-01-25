@@ -225,7 +225,7 @@ RSpec.describe TheHelp::Service do
           it 'logs that the service was called' do
             subject.call
             expect(logger).to(
-              have_received(:info)
+              have_received(:debug)
               .with(
                 match(
                   Regexp.new("Service call to " \
