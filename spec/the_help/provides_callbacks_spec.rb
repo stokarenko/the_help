@@ -44,6 +44,15 @@ RSpec.describe TheHelp::ProvidesCallbacks do
       end
     end
 
+    shared_examples_for :its_subclasses_inherit_defined_callbacks do
+      specify do
+        subclass = Class.new(subject.class)
+        instance = subclass.new(collaborator)
+        instance.do_something
+        expect(collaborator).to have_received(:callback_received).with(123)
+      end
+    end
+
     shared_examples_for :it_logs_the_callback_access do
       context 'when the including class has a #logger method' do
         before(:each) do
@@ -81,6 +90,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
       it_behaves_like :it_allows_a_collaborator_to_call_its_callbacks
       it_behaves_like :it_does_not_expose_callback_as_public_method
       it_behaves_like :it_logs_the_callback_access
+      it_behaves_like :its_subclasses_inherit_defined_callbacks
     end
 
     context 'when the callback is defined as a private method' do
@@ -98,6 +108,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
       it_behaves_like :it_allows_a_collaborator_to_call_its_callbacks
       it_behaves_like :it_does_not_expose_callback_as_public_method
       it_behaves_like :it_logs_the_callback_access
+      it_behaves_like :its_subclasses_inherit_defined_callbacks
     end
 
     context 'when the callback is defined as a public method' do
@@ -112,6 +123,7 @@ RSpec.describe TheHelp::ProvidesCallbacks do
 
       it_behaves_like :it_allows_a_collaborator_to_call_its_callbacks
       it_behaves_like :it_logs_the_callback_access
+      it_behaves_like :its_subclasses_inherit_defined_callbacks
 
       it 'retains the public scope of the callback method' do
         expect { subject.my_callback(something: 123) }

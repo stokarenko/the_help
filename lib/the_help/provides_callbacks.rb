@@ -64,6 +64,14 @@ module TheHelp
     # Classes that include ProvidesCallbacks are extended with these
     # ClassMethods
     module ClassMethods
+      protected
+
+      def _provides_callbacks_callback_defined?(name, check_ancestors: true)
+        _provides_callbacks_defined_callbacks.include?(name.to_sym) ||
+          (check_ancestors &&
+           _provides_callbacks_superclass_callback_defined?(name))
+      end
+
       private
 
       # Defines a callback method on the class
@@ -88,12 +96,17 @@ module TheHelp
         self
       end
 
-      def _provides_callbacks_callback_defined?(name)
-        _provides_callbacks_defined_callbacks.include?(name.to_sym)
-      end
-
       def _provides_callbacks_defined_callbacks
         @_provides_callbacks_defined_callbacks ||= Set.new
+      end
+
+      def _provides_callbacks_superclass_callback_defined?(name)
+        ancestors.any? { |ancestor|
+          ancestor.include?(TheHelp::ProvidesCallbacks) &&
+            ancestor._provides_callbacks_callback_defined?(
+              name, check_ancestors: false
+            )
+        }
       end
 
       def _provides_callbacks_method_defined?(name)
