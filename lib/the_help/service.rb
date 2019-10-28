@@ -15,18 +15,17 @@ module TheHelp
   #     input :send_welcome_message, default: true
   #
   #     authorization_policy do
-  #       authorized = false
-  #       call_service(Authorize, permission: :admin_users,
-  #                    allowed: ->() { authorized = true })
-  #       authorized
+  #       call_service(Authorize, permission: :admin_users).success?
   #     end
   #
   #     main do
   #       # do something to create the user account
   #       if send_welcome_message
-  #         call_service(SendWelcomeMessage, user: user,
-  #                      success: callback(:message_sent))
+  #         call_service(SendWelcomeMessage, user: user) do |result|
+  #           callback(:message_sent) if result.success?
+  #         end
   #       end
+  #       result.success
   #     end
   #
   #     callback(:message_sent) do |message|
@@ -36,25 +35,25 @@ module TheHelp
   #
   #   class Authorize < TheHelp::Service
   #     input :permission
-  #     input :allowed
   #
   #     authorization_policy allow_all: true
   #
   #     main do
   #       if user_has_permission?
-  #         allowed.call
+  #         result.success
+  #       else
+  #         result.error 'Permission Denied'
   #       end
   #     end
   #   end
   #
   #   class SendWelcomeMessage < TheHelp::Service
   #     input :user
-  #     input :success, default: ->(message) { }
   #
   #     main do
   #       message = 'Hello, world!'
   #       # do something with message...
-  #       run_callback(success, message)
+  #       result.success message
   #     end
   #   end
   #
@@ -62,38 +61,20 @@ module TheHelp
   #
   # @example Calling services with a block
   #
-  #   # Calling a service with a block when the service is not designed to
-  #   # receive one will result in an exception being raised
-  #
-  #   class DoesNotTakeBlock < TheHelp::Service
-  #     authorization_policy allow_all: true
-  #
-  #     main do
-  #       # whatever
-  #     end
-  #   end
-  #
-  #   DoesNotTakeBlock.call { |result| true } # raises TheHelp::NoResultError
-  #
-  #   # However, if the service *is* designed to receive a block (by explicitly
-  #   # assigning to the internal `#result` attribute in the main routine), the
-  #   # result will be yielded to the block if a block is present.
+  #   # The service result will be yielded to the block if a block is present.
   #
   #   class CanTakeABlock < TheHelp::Service
   #     authorization_policy allow_all: true
   #
   #     main do
-  #       self.result = :the_service_result
+  #       result.success :the_service_result
   #     end
   #   end
   #
   #   service_result = nil
   #
-  #   CanTakeABlock.call() # works just fine
-  #   service_result
-  #   #=> nil              # but obviously the result is just discarded
+  #   CanTakeABlock.call { |result| service_result = result.value }
   #
-  #   CanTakeABlock.call { |result| service_result = result }
   #   service_result
   #   #=> :the_service_result
   #
@@ -126,9 +107,7 @@ module TheHelp
       #
       # Any arguments are passed to #initialize
       def call(*args, &block)
-        result = new(*args).call(&block)
-        return result unless result.is_a?(self)
-        self
+        new(*args).call(&block)
       end
 
       # :nodoc:
@@ -185,8 +164,51 @@ module TheHelp
       end
     end
 
+    # Holds the result of running a service as well as the execution status
+    #
+    # An instance of this class will be returned from any service call and will have a status of
+    # either :success or :error along with a value that is set by the service.
+    class Result
+      attr_reader :status, :value
+
+      def initialize
+        self.status = :pending
+        self.value = nil
+      end
+
+      def pending?
+        status == :pending
+      end
+
+      def success?
+        status == :success
+      end
+
+      def error?
+        status == :error
+      end
+
+      def success(value = nil)
+        self.value = value
+        self.status = :success
+        freeze
+      end
+
+      def error(value)
+        self.value = value
+        self.status = :error
+        freeze
+      end
+
+      private
+
+      attr_writer :status, :value
+    end
+
     def initialize(context:, logger: Logger.new($stdout),
                    not_authorized: CB_NOT_AUTHORIZED, **inputs)
+      @result = Result.new
+
       self.context = context
       self.logger = logger
       self.not_authorized = not_authorized
@@ -194,26 +216,28 @@ module TheHelp
       self.stop_caller = false
     end
 
+    # Executes the service and returns the result
+    #
+    # @return [TheHelp::Service::Result]
     def call
       validate_service_definition
       catch(:stop) do
         authorize
         log_service_call
         main
+        check_result!
         self.block_result = yield result if block_given?
       end
       throw :stop if stop_caller
       return block_result if block_given?
-      return result if result_set?
-      self
+      return result
     end
 
     private
 
     attr_accessor :context, :logger, :not_authorized, :block_result,
                   :stop_caller
-    attr_writer :result
-    attr_reader :inputs
+    attr_reader :inputs, :result
 
     alias service_context context
     alias service_logger logger
@@ -257,13 +281,8 @@ module TheHelp
       throw :stop
     end
 
-    def result
-      raise TheHelp::NoResultError unless result_set?
-      @result
-    end
-
-    def result_set?
-      defined?(@result)
+    def check_result!
+      raise TheHelp::NoResultError if result.pending?
     end
 
     def run_callback(callback, *args)
