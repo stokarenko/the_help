@@ -19,7 +19,7 @@ RSpec.describe TheHelp::ServiceCaller do
       end
 
       def do_something_with_block
-        call_service(service, arg1: arg1, arg2: arg2) { |r| self.result = r }
+        call_service(service, arg1: arg1, arg2: arg2) { |r| r.value + ' foo' }
       end
     end
   }
@@ -42,7 +42,7 @@ RSpec.describe TheHelp::ServiceCaller do
       authorization_policy allow_all: true
 
       main do
-        self.result = 'the result'
+        result.success 'the result'
       end
     end
   }
@@ -63,15 +63,10 @@ RSpec.describe TheHelp::ServiceCaller do
     subject.do_something
   end
 
-  it 'sends the provided block to the service' do
-    subject.do_something_with_block
-    expect(subject.result).to eq 'the result'
-  end
-
   it 'returns the result of calling the service' do
     result = subject.do_something
-    expect(result).to eq 'the result'
+    expect(result.value).to eq 'the result'
     result = subject.do_something_with_block
-    expect(result).to eq 'the result'
+    expect(result).to eq 'the result foo'
   end
 end

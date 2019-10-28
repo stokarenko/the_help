@@ -41,6 +41,7 @@ RSpec.describe TheHelp::Service do
                        and_run: method(:stop!),
                        modifier: modifier)
           run_callback(modifier, :outer_result)
+          result.success(:outer_result)
         end
       end
     }
@@ -59,6 +60,7 @@ RSpec.describe TheHelp::Service do
         main do
           run_callback(and_run)
           run_callback(modifier, :inner_result)
+          result.success(:inner_result)
         end
       end
     }
@@ -102,6 +104,7 @@ RSpec.describe TheHelp::Service do
 
           main do
             collaborator.some_message
+            result.success(:a_result)
           end
 
           private
@@ -218,12 +221,12 @@ RSpec.describe TheHelp::Service do
           end
 
           it 'executes the main routine' do
-            subject.call
+            subject.call rescue nil
             expect(collaborator).to have_received(:some_message)
           end
 
           it 'logs that the service was called' do
-            subject.call
+            subject.call rescue nil
             expect(logger).to(
               have_received(:debug)
               .with(
@@ -236,9 +239,10 @@ RSpec.describe TheHelp::Service do
             )
           end
 
-          context 'when the service does not set a result internally' do
-            it 'returns itself' do
-              expect(subject.call).to eq subject
+          context 'when the service does not set a success or error result' do
+            it 'raises an exception' do
+              expect { subject.call }
+                .to raise_error(TheHelp::Errors::NoResultError)
             end
           end
 
@@ -247,7 +251,7 @@ RSpec.describe TheHelp::Service do
               Class.new(subclass) do
                 main do
                   collaborator.some_message
-                  self.result = :expected_result
+                  result.success(:expected_result)
                 end
               end
             }
@@ -255,7 +259,7 @@ RSpec.describe TheHelp::Service do
             subject { effective_subclass.new(**service_args) }
 
             it 'returns the result' do
-              expect(subject.call).to eq :expected_result
+              expect(subject.call.value).to eq :expected_result
             end
           end
 
@@ -269,14 +273,14 @@ RSpec.describe TheHelp::Service do
                 Class.new(subclass) do
                   main do
                     collaborator.some_message
-                    self.result = :expected_result
+                    result.success(:expected_result)
                   end
                 end
               }
 
               it 'yields the result to the provided block' do
                 result = nil
-                subject.call { |r|  result = r }
+                subject.call { |r|  result = r.value }
                 expect(result).to eq :expected_result
               end
 
@@ -335,6 +339,7 @@ RSpec.describe TheHelp::Service do
 
           main do
             foo.some_message
+            result.success(:some_result)
           end
         end
       }
@@ -361,6 +366,7 @@ RSpec.describe TheHelp::Service do
 
           main do
             foo.some_message
+            result.success(:some_result)
           end
         end
       }
@@ -420,6 +426,7 @@ RSpec.describe TheHelp::Service do
           super()
           collaborator.message_two(some_other_value)
           collaborator_2.a_message(some_value)
+          result.success(:some_result)
         end
       end
     }
