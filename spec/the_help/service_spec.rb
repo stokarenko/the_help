@@ -87,6 +87,30 @@ RSpec.describe TheHelp::Service do
         expect { subject.value! }.to raise_error(ArgumentError, 'foo')
       end
     end
+
+    context 'when an error result has been specified as an exception raised in a block' do
+      before(:each) { subject.error { raise ArgumentError.new('foo') } }
+      let!(:error_line) { (__LINE__ - 1).to_s }
+
+      it { should_not be_pending }
+      it { should_not be_success }
+      it { should be_error }
+
+      it 'has the value' do
+        expect(subject.value).to be_a(ArgumentError)
+      end
+
+      it 'has a bactrace pointing to where the error was originally raised' do
+        callsite = subject.value.backtrace.first
+        filename, line_no, _ = *callsite.split(':')
+        expect(filename).to eq __FILE__
+        expect(line_no).to eq error_line
+      end
+
+      it 'raises an exception when #value! is called' do
+        expect { subject.value! }.to raise_error(ArgumentError, 'foo')
+      end
+    end
   end
 
   describe 'a service that calls another service and executes `stop!` in a ' \

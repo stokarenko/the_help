@@ -194,8 +194,16 @@ module TheHelp
         freeze
       end
 
-      def error(value)
-        self.value = value
+      def error(value = nil, &block)
+        self.value = if block_given?
+                       begin
+                        self.value = block.call
+                       rescue StandardError => e
+                         e
+                       end
+                     else
+                       value
+                     end
         self.status = :error
         freeze
       end

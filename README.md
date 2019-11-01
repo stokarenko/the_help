@@ -118,6 +118,33 @@ call_service(MyService, foo: false)
 # raises the exception ArgumentError with the message 'foo must be true'
 ```
 
+If you want to make sure the exception's backtrace points to the correct line of code, raise the
+exception in a block provided to the `#error` method:
+
+```ruby
+class MyService < TheHelp::Service
+  authorization_policy allow_all: true
+
+  input :foo
+
+  main do
+    if foo
+      result.success 'bar'
+    else
+      result.error { raise ArgumentError.new('foo must be true') }
+    end
+  end
+end
+
+call_service(MyService, foo: false)
+# raises the exception ArgumentError with the message 'foo must be true'
+```
+
+With the block form, the backtrace will point to the line where the exception was first raised
+rather than to the `#value!` method, however all other code execution will continue until the
+point where the `#value!` method is called (as long as the exception is a subtype of
+`StandardError`.)
+
 ### Running Callbacks
 
 In some cases a simple success or error result is not sufficient to describe the various results
