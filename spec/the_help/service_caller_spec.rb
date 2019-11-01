@@ -59,14 +59,39 @@ RSpec.describe TheHelp::ServiceCaller do
       logger: service_logger,
       arg1: arg1,
       arg2: arg2
-    )
+    ).and_call_original
     subject.do_something
   end
 
-  it 'returns the result of calling the service' do
-    result = subject.do_something
-    expect(result.value).to eq 'the result'
-    result = subject.do_something_with_block
-    expect(result).to eq 'the result foo'
+  context 'when the result is successful' do
+    it 'returns the result of calling the service' do
+      result = subject.do_something
+      expect(result).to eq 'the result'
+      result = subject.do_something_with_block
+      expect(result).to eq 'the result foo'
+    end
+  end
+
+  context 'when the result is an error' do
+    let(:service) {
+      Class.new(TheHelp::Service) do
+        input :arg1
+        input :arg2
+
+        authorization_policy allow_all: true
+
+        main do
+          result.error 'an error'
+        end
+      end
+    }
+
+    it 'raises an exception if no block is provided' do
+      expect { subject.do_something }.to raise_error('an error')
+    end
+
+    it 'returns the result of the block if one is provided' do
+      expect(subject.do_something_with_block).to eq 'an error foo'
+    end
   end
 end

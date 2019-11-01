@@ -200,6 +200,16 @@ module TheHelp
         freeze
       end
 
+      def value!
+        raise TheHelp::NoResultError if pending?
+
+        raise value if error? && value.is_a?(Exception)
+
+        raise TheHelp::ResultError.new(value) if error?
+
+        value
+      end
+
       private
 
       attr_writer :status, :value

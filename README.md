@@ -28,10 +28,101 @@ them.
 Make it easier to call a service by including
 [`TheHelp::ServiceCaller`](lib/the_help/service_caller.rb).
 
+### Service Results
+
+Every service call will return an instance of `TheHelp::Service::Result`. Your service
+implementation MUST set a result using either the `#success` or the `#error` methods, for example:
+
+```ruby
+class MyService < TheHelp::Service
+  authorization_policy allow_all: true
+
+  input :foo
+
+  main do
+    if foo
+      result.success 'bar'
+    else
+      result.error 'sorry, that did not work'
+    end
+  end
+end
+
+result = MyService.call(context: {}, logger: logger, foo: false)
+result.success?
+#=> false
+result.error?
+#=> true
+result.value
+#=> 'sorry, that did not work'
+result.value!
+# raises the exception TheHelp::Service::ResultError with the message 'sorry, that did not work'
+
+result = MyService.call(context: {}, logger: logger, foo: true)
+result.success?
+#=> true
+result.error?
+#=> false
+result.value
+#=> 'bar'
+result.value!
+#=> 'bar'
+
+MyService.call(context: {}, logger: logger, foo: true) { |result|
+  break 'oops' if result.error?
+
+  result.value + ' baz'
+}
+#=> 'bar baz'
+```
+
+When using the ServiceCaller interface, unless a block is provided, the `#call_service` will call
+the `TheHelp::Service::Result#value!` method internally, and will either return the succesful
+result value or raise an exception as appropriate.
+
+```ruby
+call_service(MyService, foo: true)
+#=> 'bar'
+
+call_service(MyService, foo: false)
+# raises the exception TheHelp::Service::ResultError with the message 'sorry, that did not work'
+
+call_service(MyService, foo: true) { |result|
+  break 'oops' if result.error?
+
+  result.value + ' baz'
+}
+#=> 'bar baz'
+```
+
+Finally, you can change the type of the exception that is raised when
+`TheHelp::Service::Result#value!` is called on an error result by providing the exception itself
+as the result value:
+
+```ruby
+class MyService < TheHelp::Service
+  authorization_policy allow_all: true
+
+  input :foo
+
+  main do
+    if foo
+      result.success 'bar'
+    else
+      result.error ArgumentError.new('foo must be true')
+    end
+  end
+end
+
+call_service(MyService, foo: false)
+# raises the exception ArgumentError with the message 'foo must be true'
+```
+
 ### Running Callbacks
 
-This library encourages you to pass in callbacks to a service rather than
-relying on a return value from the service call. For example:
+In some cases a simple success or error result is not sufficient to describe the various results
+about which a service may need to be able to inform its callers. In these cases, a callback style
+of programming can be useful:
 
 ```ruby
 class Foo < TheHelp::Service
@@ -89,8 +180,10 @@ class GetSomeWidgets < TheHelp::Service
       invalid_customer.call
       no_widgets_found.call
       do_some_important_cleanup_for_invalid_customers
+      result.error 'invalid customer'
     else
       #...
+      result.success some_widgets
     end
   end
 
@@ -122,8 +215,10 @@ class GetSomeWidgets < TheHelp::Service
       run_callback(invalid_customer)
       run_callback(no_widgets_found)
       do_some_important_cleanup_for_invalid_customers
+      result.error 'invalid customer'
     else
       #...
+      result.success some_widgets
     end
   end
 

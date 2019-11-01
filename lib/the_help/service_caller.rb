@@ -39,7 +39,9 @@ module TheHelp
       }.merge(args)
       service_logger.debug("#{self.class.name}/#{__id__} called service " \
                            "#{service.name}")
-      service.call(**service_args, &block)
+      return service.call(**service_args, &block) if block_given?
+
+      service.call(**service_args).value!
     end
   end
 end

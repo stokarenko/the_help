@@ -23,6 +23,72 @@ RSpec.describe TheHelp::Service do
     expect { subject.call }.to raise_error(TheHelp::AbstractClassError)
   end
 
+  describe TheHelp::Service::Result do
+    subject { described_class.new }
+
+    context 'when no result has been specified' do
+      it { should be_pending }
+      it { should_not be_success }
+      it { should_not be_error }
+
+      it 'has a nil value' do
+        expect(subject.value).to be_nil
+      end
+
+      it 'raises an exception when #value! is called' do
+        expect { subject.value! }.to raise_error(TheHelp::NoResultError)
+      end
+    end
+
+    context 'when a success result has been specified' do
+      before(:each) { subject.success 'a result' }
+
+      it { should_not be_pending }
+      it { should be_success }
+      it { should_not be_error }
+
+      it 'has the value' do
+        expect(subject.value).to eq 'a result'
+      end
+
+      it 'returns the value when #value! is called' do
+        expect(subject.value!).to eq 'a result'
+      end
+    end
+
+    context 'when an error result has been specified' do
+      before(:each) { subject.error 'an error' }
+
+      it { should_not be_pending }
+      it { should_not be_success }
+      it { should be_error }
+
+      it 'has the value' do
+        expect(subject.value).to eq 'an error'
+      end
+
+      it 'raises an exception when #value! is called' do
+        expect { subject.value! }.to raise_error(TheHelp::ResultError, 'an error')
+      end
+    end
+
+    context 'when an error result has been specified as an exception' do
+      before(:each) { subject.error ArgumentError.new('foo') }
+
+      it { should_not be_pending }
+      it { should_not be_success }
+      it { should be_error }
+
+      it 'has the value' do
+        expect(subject.value).to be_a(ArgumentError)
+      end
+
+      it 'raises an exception when #value! is called' do
+        expect { subject.value! }.to raise_error(ArgumentError, 'foo')
+      end
+    end
+  end
+
   describe 'a service that calls another service and executes `stop!` in a ' \
            'callback' do
     let(:service_a) {
