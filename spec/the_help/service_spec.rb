@@ -479,6 +479,44 @@ RSpec.describe TheHelp::Service do
         end
       end
     end
+
+    context 'when an input is defined with a block' do
+      let(:subclass) {
+        Class.new(described_class) do
+          # because otherwise it would be empty when defined by Class.new
+          def self.name
+            'TestSubclass'
+          end
+
+          input :foo do
+            default_foo
+          end
+
+          authorization_policy allow_all: true
+
+          main do
+            result.success(foo)
+          end
+
+          def default_foo
+            :some_result
+          end
+        end
+      }
+
+      context 'when initialized with a specified value' do
+        it 'uses the specified value' do
+          service_args[:foo] = :some_other_result
+          expect(subject.call.value!).to eq :some_other_result
+        end
+      end
+
+      context 'when initialized without a specified value' do
+        it 'uses the result of calling the block as though it were a method on the service object' do
+          expect(subject.call.value!).to eq :some_result
+        end
+      end
+    end
   end
 
   context 'a subclass of a subclass of Service' do

@@ -150,17 +150,41 @@ module TheHelp
         self
       end
 
-      def input(name, **options)
-        attr_accessor name, make_private: true
-        if options.key?(:default)
-          required_inputs.delete(name)
-          define_method(name) do
-            instance_variable_get("@#{name}") || options[:default]
-          end
+      # Defines a service input
+      #
+      # The specified input becomes a named parameter for the service's `#call` method.
+      #
+      # @param name [Symbol] This becomes the name of the input parameter
+      #
+      # @param block [Proc] If a block is provided, the contents of the block will be executed in
+      #                     the scope of the service instance in order to provide the default
+      #                     value of the input. This is different than providing a Proc to the
+      #                     `:default` option, which would simply return the Proc itself as the
+      #                     default value rather than calling it.
+      #
+      # @option options [Object] :default If specified (and no block is given), this becomes the
+      #                                   literal default value for the input.
+      def input(name, **options, &block)
+        if options.key?(:default) || block
+          make_optional_input(name, options[:default], &block)
         else
+          attr_accessor name, make_private: true
           required_inputs << name
         end
         self
+      end
+
+      private
+
+      def make_optional_input(name, default, &block)
+        attr_writer name
+        private "#{name}="
+        default_routine = block || -> { default }
+        define_method("_#{name}", &default_routine)
+        define_method(name) do
+          instance_variable_get("@#{name}") || send("_#{name}")
+        end
+        required_inputs.delete(name)
       end
     end
 
