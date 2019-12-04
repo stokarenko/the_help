@@ -359,24 +359,59 @@ RSpec.describe TheHelp::Service do
             subject { effective_subclass.new(**service_args) }
 
             context 'when the service sets the result internally' do
-              let(:effective_subclass) {
-                Class.new(subclass) do
-                  main do
-                    collaborator.some_message
-                    result.success(:expected_result)
+              shared_examples_for :it_uses_the_provided_block do
+                it 'yields the result object' do
+                  result = nil
+                  subject.call do |r|
+                    result = r.value
                   end
+                  expect(result).to eq :expected_result
                 end
-              }
 
-              it 'yields the result to the provided block' do
-                result = nil
-                subject.call { |r|  result = r.value }
-                expect(result).to eq :expected_result
+                it 'returns the value of the block' do
+                  result = subject.call { |_r| 'the value' }
+                  expect(result).to eq 'the value'
+                end
               end
 
-              it 'returns the result of the block' do
-                result = subject.call { |_r| 'the value' }
-                expect(result).to eq 'the value'
+              context 'when the service has a success result' do
+                let(:effective_subclass) {
+                  Class.new(subclass) do
+                    main do
+                      collaborator.some_message
+                      result.success(:expected_result)
+                    end
+                  end
+                }
+
+                it_behaves_like :it_uses_the_provided_block
+              end
+
+              context 'when the service has an error result' do
+                let(:effective_subclass) {
+                  Class.new(subclass) do
+                    main do
+                      collaborator.some_message
+                      result.error(:expected_result)
+                    end
+                  end
+                }
+
+                it_behaves_like :it_uses_the_provided_block
+              end
+
+              context 'when the service calls stop!' do
+                let(:effective_subclass) {
+                  Class.new(subclass) do
+                    main do
+                      collaborator.some_message
+                      result.error(:expected_result)
+                      stop!
+                    end
+                  end
+                }
+
+                it_behaves_like :it_uses_the_provided_block
               end
             end
 

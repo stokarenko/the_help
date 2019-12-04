@@ -263,16 +263,21 @@ module TheHelp
     # @return [TheHelp::Service::Result]
     def call
       validate_service_definition
+
       catch(:stop) do
         authorize
         log_service_call
         main
         check_result!
-        self.block_result = yield result if block_given?
       end
+
+      self.block_result = yield result if block_given?
+
       throw :stop if stop_caller
+
       return block_result if block_given?
-      return result
+
+      result
     end
 
     private
