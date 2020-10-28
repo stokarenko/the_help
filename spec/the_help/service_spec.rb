@@ -128,7 +128,10 @@ RSpec.describe TheHelp::Service do
 
         main do
           call_service(collaborator,
-                       and_run: method(:stop!),
+                       and_run: ->() {
+                         result.error "foo"
+                         stop!
+                       },
                        modifier: modifier)
           run_callback(modifier, :outer_result)
           result.success(:outer_result)
@@ -398,6 +401,22 @@ RSpec.describe TheHelp::Service do
                 }
 
                 it_behaves_like :it_uses_the_provided_block
+              end
+
+              context 'when the service calls stop! without setting a result' do
+                let(:effective_subclass) {
+                  Class.new(subclass) do
+                    main do
+                      collaborator.some_message
+                      stop!
+                    end
+                  end
+                }
+
+                it 'raises TheHelp::NoResultError' do
+                  expect { subject.call }.to raise_error TheHelp::NoResultError
+                end
+
               end
 
               context 'when the service calls stop!' do

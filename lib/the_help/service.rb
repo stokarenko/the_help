@@ -320,11 +320,18 @@ module TheHelp
       return if authorized?
       logger.warn("Unauthorized attempt to access #{self.class.name}/#{__id__} " \
                   "as #{context.inspect}")
-      run_callback(not_authorized, service: self.class, context: context)
+      result.error run_callback(not_authorized, service: self.class, context: context)
       stop!
     end
 
-    def stop!
+    def stop!(type: :error, value: nil)
+      if value.nil?
+        check_result!
+      elsif type == :success
+        result.success value
+      else
+        result.error value
+      end
       throw :stop
     end
 
