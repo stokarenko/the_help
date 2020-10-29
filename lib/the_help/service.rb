@@ -325,14 +325,14 @@ module TheHelp
     end
 
     def stop!(type: :error, **opts)
-      if opts.has_key?(:value)
-        if type == :success
-          result.success value
-        else
-          result.error value
-        end
-      else
+      value = opts.fetch(:value) { |key|
         check_result!
+        throw :stop
+      }
+      if type == :success
+        result.success value
+      else
+        result.error value
       end
       throw :stop
     end
