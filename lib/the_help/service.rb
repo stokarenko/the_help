@@ -324,13 +324,15 @@ module TheHelp
       stop!
     end
 
-    def stop!(type: :error, value: nil)
-      if value.nil?
-        check_result!
-      elsif type == :success
-        result.success value
+    def stop!(type: :error, **opts)
+      if opts.has_key?(:value)
+        if type == :success
+          result.success value
+        else
+          result.error value
+        end
       else
-        result.error value
+        check_result!
       end
       throw :stop
     end
