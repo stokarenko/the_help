@@ -454,6 +454,36 @@ RSpec.describe TheHelp::Service do
       end
     end
 
+    context 'when the subclass delegates to another service' do
+      let!(:collaborator) {
+        class_double('CollaboratorStub').tap do |c|
+          c.as_stubbed_const
+          allow(c).to receive(:call).and_yield(collaborator_result).and_return(collaborator_result)
+        end
+      }
+
+      let(:collaborator_result) { double('collaborator result', pending?: false) }
+
+      let(:subclass) {
+        Class.new(described_class) do
+          # because otherwise it would be empty when defined by Class.new
+          def self.name
+            'TestSubclass'
+          end
+
+          authorization_policy(allow_all: true)
+
+          main do
+            delegate_to_service CollaboratorStub
+          end
+        end
+      }
+
+      it 'uses the delagated service result as its own' do
+        expect(subject.call).to be collaborator_result
+      end
+    end
+
     shared_examples_for :it_uses_the_specified_input_value do
       let(:collaborator) {
         double('collaborator input', some_message: nil)

@@ -349,5 +349,9 @@ module TheHelp
       end
       self.stop_caller ||= !continue
     end
+
+    def delegate_to_service(*args)
+      call_service(*args) { |result| @result = result }
+    end
   end
 end

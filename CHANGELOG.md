@@ -1,5 +1,11 @@
 # TheHelp Changelog #
 
+## 3.4.0 ##
+
+* added `TheHelp::Service#delegate_to_service` method that can be used inside a service definition
+  in order to have the current service delegate to another service and use the other service's
+  result as its own.
+
 ## 3.3.0 ##
 
 * Calling `#stop!` with no arguments in a service definition will now check that a result was set

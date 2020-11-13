@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    the_help (3.3.2)
+    the_help (3.4.0)
 
 GEM
   remote: https://rubygems.org/
