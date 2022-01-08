@@ -106,8 +106,8 @@ module TheHelp
       # Convenience method to instantiate the service and immediately call it
       #
       # Any arguments are passed to #initialize
-      def call(*args, &block)
-        new(*args).call(&block)
+      def call(*args, **options, &block)
+        new(*args, **options).call(&block)
       end
 
       # :nodoc:
@@ -341,17 +341,23 @@ module TheHelp
       raise TheHelp::NoResultError if result.pending?
     end
 
-    def run_callback(callback, *args)
+    def run_callback(callback, *args, **options)
       continue = false
       continue = catch(:stop) do
-        callback.call(*args)
+        if options.empty?
+          # Satisfies Ruby 2.4 and friends - where straightforward `, **options`
+          # still lands as separated `{}` parameter into the lambda..
+          callback.call(*args)
+        else
+          callback.call(*args, **options)
+        end
         true
       end
       self.stop_caller ||= !continue
     end
 
-    def delegate_to_service(*args)
-      call_service(*args) { |result| @result = result }
+    def delegate_to_service(*args, **options)
+      call_service(*args, **options) { |result| @result = result }
     end
   end
 end

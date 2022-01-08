@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'set'
+
 module TheHelp
   # Adds a callback DSL to including classes
   #
@@ -129,12 +131,12 @@ module TheHelp
 
       def _provides_callbacks_define_wrapper(name, without_logging)
         make_public = public_method_defined?(name)
-        define_method(name) do |*args|
+        define_method(name) do |*args, **options|
           if defined?(logger)
             logger.debug("#{self.class.name}/#{__id__} received callback " \
                          ":#{name}.")
           end
-          send(without_logging, *args)
+          send(without_logging, *args, **options)
           self
         end
         private name unless make_public
